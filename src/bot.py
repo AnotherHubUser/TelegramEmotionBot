@@ -1,10 +1,11 @@
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from pathlib import Path
-from emotion_classifier import EmotionClassifier
+from src.emotion_classifier import EmotionClassifier
 
-from config import TOKEN
-from logger import get_logger, with_log_context
+from src.config import TOKEN
+from src.logger import get_logger, with_log_context
 
 logger = get_logger(__name__)
 
@@ -118,7 +119,7 @@ class Bot:
             state = context.user_data.get('state')
             target_emotion = context.user_data.get('target_emotion')
             if state == 'waiting_voice' and target_emotion:
-                await update.message.reply_text("trying to convert your voice into {target_emotion}")
+                await update.message.reply_text(f"trying to convert your voice into {target_emotion}")
 
                 # voice converting here
 
@@ -131,12 +132,13 @@ class Bot:
                 # await update.message.reply_text()
 
             else:
-                emotions2probs = [(emotion, prob) for emotion, prob in self.classifier.predict_with_scores(file_path).items()]
-                emotions2probs.sort(key=lambda x: -x[1])
+                # scores = await asyncio.get_running_loop().run_in_executor(None, self.classifier.predict_with_scores, file_path)
+                # emotions2probs = [(emotion, prob) for emotion, prob in scores.items()]
+                # emotions2probs.sort(key=lambda x: -x[1])
 
-                message = ""
-                for emotion, prob in emotions2probs:
-                    message += f"{emotion}:\t\t{prob * 100:.2f}%\n"
+                message = "Раньше тут были предсказания, да всплыли"
+                # for emotion, prob in emotions2probs:
+                #     message += f"{emotion}:\t\t{prob * 100:.2f}%\n"
 
                 await update.message.reply_text(message)
                 logger.info(f"replied to user {user.id}({user.full_name}) with his voice score")
@@ -147,6 +149,7 @@ class Bot:
                 f"enternal error. HZ v chem delo. {e}"
             )
 
+    @with_log_context
     async def download_audio(self, update: Update, user_id: int):
         voice_file = await update.message.effective_attachment.get_file()
         file_id = update.message.voice.file_id

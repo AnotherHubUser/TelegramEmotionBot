@@ -1,9 +1,9 @@
-import bot
-from config import TOKEN
+import src.bot as bot
+from src.config import TOKEN
 
-from logger import setup_logger, get_logger
+from src.logger import setup_logger, get_logger
 
-setup_logger(level='debug', log_file='logs/log')
+setup_logger(level='info', log_file='logs/log')
 logger = get_logger(__name__)
 
 

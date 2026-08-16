@@ -1,13 +1,13 @@
 # import numpy as np
 import gigaam
-from logger import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 class EmotionClassifier:
     def __init__(self):
         logger.info("start loading model")
-        self.model = gigaam.load_model('emo')
+        # self.model = gigaam.load_model('emo')
         logger.info("model loaded")
     
     def predict(self, audio_path):

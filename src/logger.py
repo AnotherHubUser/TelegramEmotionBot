@@ -1,37 +1,36 @@
 import logging
+import contextvars
 import sys
-import threading
 from pathlib import Path
 from functools import wraps
 from telegram import Update
 
 
-_context = threading.local()
-
-def set_update_id(update_id):
-    _context.update_id = update_id
-
-def get_update_id():
-    return getattr(_context, 'update_id', '-')
-
-def clear_update_id():
-    if hasattr(_context, 'update_id'):
-        delattr(_context, 'update_id')
+update_id_ctx = contextvars.ContextVar('update_id', default='-')
 
 def with_log_context(func):
     @wraps(func)
-    async def wrapper(self, update, *args, **kwargs):
-        if update and hasattr(update, 'update_id'):
-            set_update_id(update.update_id)
+    async def wrapper(*args, **kwargs):
+        token = None
+
+        update = kwargs.get('update')
+        if isinstance(update, Update) and hasattr(update, 'update_id'):
+            token = update_id_ctx.set(update.update_id)
+        else:            
+            for arg in args:
+                if isinstance(arg, Update) and hasattr(arg, 'update_id'):
+                    token = update_id_ctx.set(arg.update_id)
+                    break
         try:
-            return await func(self, update, *args, **kwargs)
+            return await func(*args, **kwargs)
         finally:
-            clear_update_id()
+            if token:
+                update_id_ctx.reset(token)
     return wrapper
 
 class UpdateIdFilter(logging.Filter):
     def filter(self, record):
-        record.update_id = get_update_id()
+        record.update_id = update_id_ctx.get()
         return True
 
 LOG_LEVELS = {
@@ -48,8 +47,8 @@ def setup_logger(name: str = None, level: str = 'info', log_file: str = None) ->
     if logger.handlers:
         return logger
 
-    logger.setLevel(LOG_LEVELS.get(level.lower(), logging.INFO))
-    
+    logger.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter(
         fmt='%(asctime)s | [update:%(update_id)-8s] | %(name)-25s | %(levelname)-8s | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
@@ -57,7 +56,7 @@ def setup_logger(name: str = None, level: str = 'info', log_file: str = None) ->
     
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(LOG_LEVELS.get(level.lower(), logging.INFO))
     console_handler.addFilter(UpdateIdFilter())
     logger.addHandler(console_handler)
     
@@ -77,4 +76,4 @@ def setup_logger(name: str = None, level: str = 'info', log_file: str = None) ->
     return logger
 
 def get_logger(name: str) -> logging.Logger:
-    return setup_logger(name)
+    return logging.getLogger(name)
