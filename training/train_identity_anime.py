@@ -16,8 +16,11 @@ from config.identity_config import TrainingConfig, DebugConfig
 # from utils.audio import AudioProcessorWrapper
 # from utils.dataset import RAVDESSDataset, collate_fn
 # from tqdm import tqdm
-from runners.identity_runner import IdentityRunner, OnebatchIdentityRunner
+from runners.identity_runner import IdentityRunner, OnebatchIdentityRunner, OnlineIdentityRunner
 
+import warnings
+# Глушим конкретное предупреждение про resize в STFT
+warnings.filterwarnings("ignore", message="An output with one or more elements was resized")
 
 # def preprocess():
 #     config = DebugConfig()
@@ -115,7 +118,8 @@ def main():
     else:
         config = TrainingConfig()
         cache_dir = "./archive/LibriTTS_R/dev-clean"
-        runner = IdentityRunner(config, cache_dir, False)
+        # runner = IdentityRunner(config, cache_dir, False)
+        runner = OnlineIdentityRunner(config, cache_dir)
 
     runner.run()
 

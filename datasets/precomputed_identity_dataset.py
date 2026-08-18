@@ -52,11 +52,11 @@ def make_identity_cached_collate_fn(config: TrainingConfig):
         feats_outputs_mask = create_binary_mask(max_feats_outputs_len, feats_outputs_lens)
              
         return {
-            config.batch_feats_key: feats_outputs,
-            config.batch_feats_mask_key: feats_outputs_mask,
+            config.batch_feats_key: feats_outputs,              # [B, 13, T_feat_max, 768]
+            config.batch_feats_mask_key: feats_outputs_mask,    # [B, T_feat_max]
             
-            config.batch_mel_key: target_mels,
-            config.batch_mel_mask_key: target_mels_mask,
+            config.batch_mel_key: target_mels,                  # [B, 100, T_mel_max]
+            config.batch_mel_mask_key: target_mels_mask,        # [B, T_mel_max]
         }
     
     return cached_collate_fn

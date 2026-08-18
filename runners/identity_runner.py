@@ -4,13 +4,14 @@ import torchaudio
 from torch.utils.data import DataLoader
 from pathlib import Path
 from tqdm import tqdm
+from config.identity_config import TrainingConfig
 from runners.base_runner import BaseRunner
 from models.adapter import EmotionAdapter
 from models.learnable_layer_pooling import LearnableLayerPooling
 from models.hubert import HubertWrapper
 from models.vocoder import VocoderWrapper
 from pipelines.preprocess_identity import IdentityPreprocessPipeline
-from trainers.identity_trainer import IdentityTrainer
+from trainers.identity_trainer import IdentityTrainer, IdentityFullTrainer
 from datasets.precomputed_identity_dataset import PrecomputedIdentityDataset, make_identity_cached_collate_fn
 from datasets.LibriTTS_R_dataset import LibriTTSRDataset
 from utils.audio import AudioProcessorWrapper
@@ -130,3 +131,63 @@ class OnebatchIdentityRunner(IdentityRunner):
             loss=sanity[self.config.step_loss_key],
             filename=f"onebatched_{epoch}.pt"
         )
+
+
+class OnlineIdentityRunner(IdentityRunner):
+    def __init__(self, config: TrainingConfig, cache_dir: str):
+        super().__init__(config, cache_dir, run_preprocess=False)
+        self.mel_processor = AudioProcessorWrapper(self.config)
+        self.feature_extractor = HubertWrapper(self.config)
+        self.identity_cached_collate_fn = make_identity_cached_collate_fn(self.config)
+
+    def _execute_preprocessing(self):
+        pass
+
+    def _build_trainer(self) -> IdentityTrainer:
+        adapter = EmotionAdapter(
+            input_dim=self.config.feats_output_dim, 
+            hidden_dim=self.config.adapter_hidden_dim, 
+            output_dim=self.config.vocoder_input_dim
+        ).to(self.config.device)
+
+        num_layers = HubertWrapper(self.config).model.get_num_layers()   
+        pooling = LearnableLayerPooling(num_layers=num_layers).to(self.config.device)
+        
+        models = {
+            self.config.models_adapter_name: adapter,
+            self.config.models_pooling_name: pooling, 
+        }
+        
+        optimizer = torch.optim.Adam([
+            {'params': adapter.parameters(), 'lr': self.config.adapter_lr},
+            {'params': pooling.parameters(), 'lr': self.config.pooling_lr}
+        ])
+        criterion = torch.nn.L1Loss(reduction='none')        
+        return IdentityFullTrainer(self.config, models, optimizer, criterion)
+
+
+    def _build_dataloader(self) -> DataLoader:
+        self.raw_dataset = LibriTTSRDataset(self.config, self.cache_dir)
+        
+        return DataLoader(
+            self.raw_dataset, 
+            batch_size=self.config.batch_size, 
+            shuffle=True, 
+            num_workers=self.config.num_workers,
+            collate_fn=self._online_collate_fn,
+        )
+    
+    def _online_collate_fn(self, batch_list):
+        # Вход список словарей {wave: [1, wave_len], sr: int}
+        # Выход словарь 4 батча {
+        #   feats:      [B, 13, T_feat_max, 768],
+        #   feats_mask: [B, T_feat_max],
+        #   mel:        [B, 100, T_mel_max],
+        #   mel_mask:   [B, T_mel_max],}
+        # 
+        waves = [item[self.config.batch_wave_key] for item in batch_list]
+        srs = [item[self.config.batch_sr_key] for item in batch_list]
+        return {
+            self.config.batch_wave_key: waves,
+            self.config.batch_sr_key: srs,
+        }

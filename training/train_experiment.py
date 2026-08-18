@@ -60,3 +60,13 @@ if __name__ == "__main__":
         checkpoint_filename="checkpoint_epoch_0.pt",
         # checkpoint_filename="onebatched_10049.pt"
     )
+
+
+# KGAT_f06fec2fa8aef9ed16154fd66c4d41bc
+
+# export KAGGLE_API_TOKEN=KGAT_f06fec2fa8aef9ed16154fd66c4d41bc
+
+# mkdir -p ~/.kaggle && echo KGAT_f06fec2fa8aef9ed16154fd66c4d41bc > ~/.kaggle/access_token && chmod 600 ~/.kaggle/access_token
+
+# kaggle competitions list
+
