@@ -2,13 +2,14 @@ import torch
 
 
 class TrainingConfig:
-    # device: str = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    device: str = torch.device("mps")
+    device: str = torch.device("cuda" if torch.backends.cuda.is_available() else "cpu")
+    # device: str = torch.device("mps")
     num_workers = 2
     seed: int = 29
     
     RAVDESS_dataset_dir: str = "archive/RAVDESS"
-    LibriTTS_R_dataset_dir: str = "archive/LibriTTS_R"
+    # LibriTTS_R_dataset_dir: str = "archive/LibriTTS_R"
+    LibriTTS_R_dataset_dir: str = "/kaggle/input/libritts-r"
     checkpoint_dir: str = "checkpoints/identity_reconstruction"
     output_dir: str = "data/train/identity_reconstruction"
 
@@ -41,8 +42,8 @@ class TrainingConfig:
 
     orig_sr: int = 48000
 
-    # feats_model_name: str = "facebook/hubert-base-ls960"
-    feats_model_name: str = "./hubert_local"
+    feats_model_name: str = "facebook/hubert-base-ls960"
+    # feats_model_name: str = "./hubert_local"
     feats_sr: int = 16000
     feats_output_dim: int = 768
 
@@ -54,7 +55,7 @@ class TrainingConfig:
     
     adapter_hidden_dim: int = 256
 
-    batch_size: int = 32
+    batch_size: int = 16
     epochs: int = 20
     
     adapter_lr: float = 2e-4

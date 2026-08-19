@@ -1,6 +1,34 @@
 # import torch
 # import torchaudio
 # import time
+import sys
+import os
+
+print("================= KAGGLE ENVIRONMENT INSPECTION =================")
+print(f"Current Working Directory (cwd): {os.getcwd()}")
+print(f"Absolute path of this script (__file__): {os.path.abspath(__file__)}")
+print(f"Python search paths (sys.path): {sys.path}")
+
+print("\n--- Listing contents of /kaggle/ ---")
+if os.path.exists("/kaggle"):
+    print(os.listdir("/kaggle"))
+else:
+    print("/kaggle directory does not exist")
+
+print("\n--- Listing contents of /kaggle/working/ ---")
+if os.path.exists("/kaggle/working"):
+    print(os.listdir("/kaggle/working"))
+else:
+    print("/kaggle/working directory does not exist")
+
+print("\n--- Listing contents of current script directory ---")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+print(os.listdir(script_dir))
+print("================================================================")
+
+# Принудительно завершаем скрипт, чтобы не падать на ошибках импорта дальше
+sys.exit(0)
+
 import multiprocessing as mp
 
 # from torch.utils.data import DataLoader
