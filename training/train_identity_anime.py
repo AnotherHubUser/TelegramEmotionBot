@@ -28,11 +28,14 @@ def main():
         epochs = [20, 5, 2]
         prev_dataset = None
         prev_epoch = None
+        checkpoint = None
         for dataset_name, epoch in zip(datasets, epochs):
             dataset_dir = cache_dir + dataset_name
             config.epochs = epoch
             runner = OnlineIdentityRunner(config, dataset_dir)
-            runner.run(checkpoint= f"checkpoint_{prev_dataset}_epoch_{prev_epoch - 1}.pt")
+            if prev_dataset is not None and prev_epoch is not None:
+                checkpoint = f"checkpoint_{prev_dataset}_epoch_{prev_epoch - 1}.pt"
+            runner.run(checkpoint=checkpoint)
             prev_dataset = dataset_name
             prev_epoch = epoch
 
