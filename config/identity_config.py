@@ -4,7 +4,7 @@ import torch
 class TrainingConfig:
     device: str = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device: str = torch.device("mps")
-    num_workers = 2
+    num_workers = 4
     seed: int = 29
     
     RAVDESS_dataset_dir: str = "archive/RAVDESS"
@@ -55,7 +55,7 @@ class TrainingConfig:
     
     adapter_hidden_dim: int = 256
 
-    batch_size: int = 16
+    batch_size: int = 32
     epochs: int = 20
     
     adapter_lr: float = 2e-4
