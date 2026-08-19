@@ -2,14 +2,14 @@ import torch
 
 
 class TrainingConfig:
-    device: str = torch.device("cuda" if torch.backends.cuda.is_available() else "cpu")
+    device: str = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device: str = torch.device("mps")
     num_workers = 2
     seed: int = 29
     
     RAVDESS_dataset_dir: str = "archive/RAVDESS"
     # LibriTTS_R_dataset_dir: str = "archive/LibriTTS_R"
-    LibriTTS_R_dataset_dir: str = "/kaggle/input/libritts-r"
+    LibriTTS_R_dataset_dir: str = "/kaggle/input/datasets/justsahil/libritts-r"
     checkpoint_dir: str = "checkpoints/identity_reconstruction"
     output_dir: str = "data/train/identity_reconstruction"
 

@@ -69,11 +69,12 @@ class IdentityRunner(BaseRunner):
         
         return IdentityTrainer(self.config, models, optimizer, criterion)
 
-    def run(self):
+    def run(self, checkpoint=None):
         start_epoch = 0
-        checkpoint_path = Path(self.config.checkpoint_dir) / "checkpoint_epoch_4.pt"
-        if checkpoint_path.exists():
-            start_epoch, _ = self.trainer.load_checkpoint(checkpoint_path)
+        if checkpoint is not None:
+            checkpoint_path = Path(self.config.checkpoint_dir) / checkpoint
+            if checkpoint_path.exists():
+                start_epoch, _ = self.trainer.load_checkpoint(checkpoint_path)
 
         for epoch in range(start_epoch, self.config.epochs):
             epoch_loss = 0.0
@@ -96,7 +97,7 @@ class IdentityRunner(BaseRunner):
             self.trainer.save_checkpoint(
                 epoch=epoch,
                 loss=avg_loss,
-                filename=f"checkpoint_epoch_{epoch}.pt"
+                filename=f"checkpoint_{Path(self.cache_dir).name}_epoch_{epoch}.pt"
             )
 
 
