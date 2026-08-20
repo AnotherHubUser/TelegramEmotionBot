@@ -71,11 +71,7 @@ class IdentityTrainer(BaseTrainer):
             self.optimizer.step()
         print(f"optimizer step: {time.perf_counter() - start_step_time:.4f} secs.")
 
-        del feats_outputs, feats_outputs_mask, target_mel, mel_mask, predicted_mel, raw_loss, loss
-        if 'cuda' in self.device.type:
-            torch.cuda.empty_cache()
-
-        return {
+        step_results = {
             self.config.step_loss_key: loss.item(),
             self.config.step_grad_norm_key: grad_norm,
             self.config.step_total_grad_norm_key: total_grad_norm,
@@ -83,6 +79,12 @@ class IdentityTrainer(BaseTrainer):
             self.config.step_target_mel_key: target_mel.detach(),
             self.config.step_mel_mask_key: mel_mask.detach()
         }
+        
+        del feats_outputs, feats_outputs_mask, target_mel, mel_mask, predicted_mel, raw_loss, loss
+        if 'cuda' in self.device.type:
+            torch.cuda.empty_cache()
+
+        return step_results
     
     @torch.no_grad()
     def evaluate_sanity(self, batch_dict):
