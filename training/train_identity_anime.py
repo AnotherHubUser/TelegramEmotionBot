@@ -43,7 +43,7 @@ def main():
         #     prev_epoch = epoch
 
         dataset_dir = cache_dir + "train_clean_100"
-        config.epochs = 3
+        config.epochs = 5
         runner = OnlineIdentityRunner(config, dataset_dir)
         runner.run()
     
