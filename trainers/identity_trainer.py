@@ -13,7 +13,7 @@ class IdentityTrainer(BaseTrainer):
         super().__init__(config, models, optimizer)
         self.criterion = criterion or nn.L1Loss(reduction='none')
         self.pooling = self.models[config.models_pooling_name]
-        self.adapter = self.models[config.models_adapter_name]
+        self.adapter = self.models[config.models_adapter_name] 
                 
     def train_step(self, batch_dict):
         start_step_time = time.perf_counter()
@@ -29,24 +29,30 @@ class IdentityTrainer(BaseTrainer):
         mel_mask = batch_dict[self.config.batch_mel_mask_key].to(self.device)
         target_len = target_mel.shape[-1]
 
-        start_step_time = time.perf_counter()
-        pooling_feats = self.pooling(feats_outputs) * feats_outputs_mask.unsqueeze(2)
-        print(f"passing pooling: {time.perf_counter() - start_step_time:.4f} secs.")
+        with torch.amp.autocast(device_type=self.device):
+            start_step_time = time.perf_counter()
+            pooling_feats = self.pooling(feats_outputs) * feats_outputs_mask.unsqueeze(2)
+            print(f"passing pooling: {time.perf_counter() - start_step_time:.4f} secs.")
+            
+            start_step_time = time.perf_counter()
+            predicted_mel = self.adapter(pooling_feats, target_len, mask=feats_outputs_mask, mel_mask=mel_mask)
+            print(f"passing adapter: {time.perf_counter() - start_step_time:.4f} secs.")
+            
+            start_step_time = time.perf_counter()
+            mel_mask = mel_mask.unsqueeze(1)
+            raw_loss = self.criterion(predicted_mel, target_mel) * mel_mask
+            # expanded_mask = mel_mask.unsqueeze(1)
+            # loss = (raw_loss * expanded_mask).sum() / (expanded_mask.sum() * predicted_mel.shape[1] + 1e-7)
+            loss = raw_loss.sum() / (mel_mask.sum() * self.config.vocoder_input_dim)
+            print(f"computing loss: {time.perf_counter() - start_step_time:.4f} secs.")
         
         start_step_time = time.perf_counter()
-        predicted_mel = self.adapter(pooling_feats, target_len, mask=feats_outputs_mask, mel_mask=mel_mask)
-        print(f"passing adapter: {time.perf_counter() - start_step_time:.4f} secs.")
-        
-        start_step_time = time.perf_counter()
-        mel_mask = mel_mask.unsqueeze(1)
-        raw_loss = self.criterion(predicted_mel, target_mel) * mel_mask
-        # expanded_mask = mel_mask.unsqueeze(1)
-        # loss = (raw_loss * expanded_mask).sum() / (expanded_mask.sum() * predicted_mel.shape[1] + 1e-7)
-        loss = raw_loss.sum() / (mel_mask.sum() * self.config.vocoder_input_dim)
-        print(f"computing loss: {time.perf_counter() - start_step_time:.4f} secs.")
-        
-        start_step_time = time.perf_counter()
-        loss.backward()
+        if self.scaler is not None:
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
+        else:
+            loss.backward()
+
         print(f"loss backward: {time.perf_counter() - start_step_time:.4f} secs.")
         
         start_step_time = time.perf_counter()
@@ -58,7 +64,11 @@ class IdentityTrainer(BaseTrainer):
         print(f"clipping grads and etc: {time.perf_counter() - start_step_time:.4f} secs.")
         
         start_step_time = time.perf_counter()
-        self.optimizer.step()
+        if self.scaler is not None:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            self.optimizer.step()
         print(f"optimizer step: {time.perf_counter() - start_step_time:.4f} secs.")
         
         return {

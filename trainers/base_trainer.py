@@ -9,6 +9,9 @@ class BaseTrainer:
     def __init__(self, config: TrainingConfig, models: Dict[str, nn.Module], optimizer: torch.optim.Optimizer):
         self.config = config
         self.device = config.device
+        self.scaler = None
+        if 'cuda' in str(self.device):
+            self.scaler = torch.cuda.amp.GradScaler()
         
         self.models = nn.ModuleDict(models).to(self.device)
         self.optimizer = optimizer
