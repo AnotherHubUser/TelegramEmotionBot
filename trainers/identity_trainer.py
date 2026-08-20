@@ -70,7 +70,11 @@ class IdentityTrainer(BaseTrainer):
         else:
             self.optimizer.step()
         print(f"optimizer step: {time.perf_counter() - start_step_time:.4f} secs.")
-        
+
+        del feats_outputs, feats_outputs_mask, target_mel, mel_mask, predicted_mel, raw_loss, loss
+        if 'cuda' in self.device.type:
+            torch.cuda.empty_cache()
+
         return {
             self.config.step_loss_key: loss.item(),
             self.config.step_grad_norm_key: grad_norm,
