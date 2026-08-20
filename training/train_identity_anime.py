@@ -1,3 +1,6 @@
+import os
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+
 import multiprocessing as mp
 
 from config.identity_config import TrainingConfig, DebugConfig
