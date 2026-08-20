@@ -21,7 +21,7 @@ class BaseTrainer:
         checkpoint_path = os.path.join(self.config.checkpoint_dir, filename)
         
         models_state = {name: model.state_dict() for name, model in self.models.items()}
-        
+
         state_snapshot = {
             self.config.snapshot_epoch_key: epoch,
             self.config.snapshot_loss_key: loss,

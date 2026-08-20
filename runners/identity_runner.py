@@ -57,6 +57,28 @@ class IdentityRunner(BaseRunner):
         num_layers = HubertWrapper(self.config).model.get_num_layers()   
         pooling = LearnableLayerPooling(num_layers=num_layers).to(self.config.device)
         
+        is_multi_gpu = 'cuda' in str(self.config.device) and torch.cuda.device_count() > 1
+        class TransparentDataParallel(torch.nn.DataParallel):
+            def __getattr__(self, name):
+                try:
+                    return super().__getattr__(name)
+                except AttributeError:
+                    return getattr(self.module, name)
+
+            def parameters(self, recurse=True):
+                return self.module.parameters(recurse=recurse)
+
+            def state_dict(self, *args, **kwargs):
+                return self.module.state_dict(*args, **kwargs)
+
+            def load_state_dict(self, state_dict, strict=True):
+                return self.module.load_state_dict(state_dict, strict=strict)
+
+            
+        if is_multi_gpu:
+            adapter = TransparentDataParallel(adapter)
+            pooling = TransparentDataParallel(pooling)
+            
         models = {
             self.config.models_adapter_name: adapter,
             self.config.models_pooling_name: pooling, 
