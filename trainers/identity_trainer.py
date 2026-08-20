@@ -79,7 +79,7 @@ class IdentityTrainer(BaseTrainer):
             self.config.step_target_mel_key: target_mel.detach(),
             self.config.step_mel_mask_key: mel_mask.detach()
         }
-        
+
         del feats_outputs, feats_outputs_mask, target_mel, mel_mask, predicted_mel, raw_loss, loss
         if 'cuda' in self.device.type:
             torch.cuda.empty_cache()
@@ -133,13 +133,14 @@ class IdentityFullTrainer(IdentityTrainer):
         waves = batch_dict[self.config.batch_wave_key]
         srs = batch_dict[self.config.batch_sr_key]
 
-        start_time = time.perf_counter()
-        target_mel, mel_mask = self.mel_processor(waves, srs)
-        print(f"mel processed in {time.perf_counter() - start_time}")
+        with torch.inference_mode():
+            start_time = time.perf_counter()
+            target_mel, mel_mask = self.mel_processor(waves, srs)
+            print(f"mel processed in {time.perf_counter() - start_time}")
 
-        start_time = time.perf_counter()             
-        feats, feats_mask =  self.feature_extractor(waves, srs)
-        print(f"features extracted in {time.perf_counter() - start_time}")
+            start_time = time.perf_counter()             
+            feats, feats_mask =  self.feature_extractor(waves, srs)
+            print(f"features extracted in {time.perf_counter() - start_time}")
                         
         return {
             self.config.batch_feats_key: feats,
