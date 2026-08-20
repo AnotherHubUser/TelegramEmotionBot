@@ -29,7 +29,7 @@ class IdentityTrainer(BaseTrainer):
         mel_mask = batch_dict[self.config.batch_mel_mask_key].to(self.device)
         target_len = target_mel.shape[-1]
 
-        with torch.amp.autocast(device_type=self.device):
+        with torch.amp.autocast(device_type=self.device.type):
             start_step_time = time.perf_counter()
             pooling_feats = self.pooling(feats_outputs) * feats_outputs_mask.unsqueeze(2)
             print(f"passing pooling: {time.perf_counter() - start_step_time:.4f} secs.")
