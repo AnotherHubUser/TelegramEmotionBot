@@ -2,6 +2,7 @@
 import torch
 import torchaudio
 from torch.utils.data import DataLoader
+import time
 from pathlib import Path
 from tqdm import tqdm
 from config.identity_config import TrainingConfig
@@ -76,16 +77,23 @@ class IdentityRunner(BaseRunner):
             if checkpoint_path.exists():
                 start_epoch, _ = self.trainer.load_checkpoint(checkpoint_path)
 
+        start_time = time.perf_counter()
+
         for epoch in range(start_epoch, self.config.epochs):
             epoch_loss = 0.0
             progress_bar = tqdm(self.dataloader, desc=f"Epoch {epoch}")
-            
+            print(f"loaded progress bar {time.perf_counter() - start_time:.4f} secs.")
+            start_time = time.perf_counter()
             for batch in progress_bar:
+                print(f"loaded batch in {time.perf_counter() - start_time}")
+                start_time = time.perf_counter()
                 step_data = self.trainer.train_step(batch)
+                print(f"trainer step in {time.perf_counter() - start_time}")
                 loss_val = step_data[self.config.step_loss_key]
                 epoch_loss += loss_val
                 
                 progress_bar.set_postfix({"loss": f"{loss_val:.4f}"})
+                start_time = time.perf_counter()
                 
             avg_loss = epoch_loss / len(self.dataloader)
             print(f"[Epoch {epoch} completed] Avg loss: {avg_loss:.6f}")
