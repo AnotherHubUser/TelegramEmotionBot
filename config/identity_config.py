@@ -55,7 +55,7 @@ class TrainingConfig:
     
     adapter_hidden_dim: int = 256
 
-    batch_size: int = 32
+    batch_size: int = 16
     epochs: int = 20
     
     adapter_lr: float = 2e-4

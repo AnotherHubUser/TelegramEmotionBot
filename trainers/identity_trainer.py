@@ -16,11 +16,11 @@ class IdentityTrainer(BaseTrainer):
         self.adapter = self.models[config.models_adapter_name] 
                 
     def train_step(self, batch_dict):
-        start_step_time = time.perf_counter()
+        # start_step_time = time.perf_counter()
         self.pooling.train()
         self.adapter.train()
         self.optimizer.zero_grad()
-        print(f"set train mode: {time.perf_counter() - start_step_time:.4f} secs.")
+        # print(f"set train mode: {time.perf_counter() - start_step_time:.4f} secs.")
     
         feats_outputs = batch_dict[self.config.batch_feats_key].to(self.device)
         feats_outputs_mask = batch_dict[self.config.batch_feats_mask_key].to(self.device)
@@ -30,46 +30,46 @@ class IdentityTrainer(BaseTrainer):
         target_len = target_mel.shape[-1]
 
         with torch.amp.autocast(device_type=self.device.type):
-            start_step_time = time.perf_counter()
+            # start_step_time = time.perf_counter()
             pooling_feats = self.pooling(feats_outputs) * feats_outputs_mask.unsqueeze(2)
-            print(f"passing pooling: {time.perf_counter() - start_step_time:.4f} secs.")
+            # print(f"passing pooling: {time.perf_counter() - start_step_time:.4f} secs.")
             
-            start_step_time = time.perf_counter()
+            # start_step_time = time.perf_counter()
             predicted_mel = self.adapter(pooling_feats, target_len, mask=feats_outputs_mask, mel_mask=mel_mask)
-            print(f"passing adapter: {time.perf_counter() - start_step_time:.4f} secs.")
+            # print(f"passing adapter: {time.perf_counter() - start_step_time:.4f} secs.")
             
-            start_step_time = time.perf_counter()
+            # start_step_time = time.perf_counter()
             mel_mask = mel_mask.unsqueeze(1)
             raw_loss = self.criterion(predicted_mel, target_mel) * mel_mask
             # expanded_mask = mel_mask.unsqueeze(1)
             # loss = (raw_loss * expanded_mask).sum() / (expanded_mask.sum() * predicted_mel.shape[1] + 1e-7)
             loss = raw_loss.sum() / (mel_mask.sum() * self.config.vocoder_input_dim)
-            print(f"computing loss: {time.perf_counter() - start_step_time:.4f} secs.")
+            # print(f"computing loss: {time.perf_counter() - start_step_time:.4f} secs.")
         
-        start_step_time = time.perf_counter()
+        # start_step_time = time.perf_counter()
         if self.scaler is not None:
             self.scaler.scale(loss).backward()
             self.scaler.unscale_(self.optimizer)
         else:
             loss.backward()
 
-        print(f"loss backward: {time.perf_counter() - start_step_time:.4f} secs.")
+        # print(f"loss backward: {time.perf_counter() - start_step_time:.4f} secs.")
         
-        start_step_time = time.perf_counter()
+        # start_step_time = time.perf_counter()
         first_layer_grad = self.adapter.input_proj.weight.grad
         grad_norm = first_layer_grad.norm().item() if first_layer_grad is not None else 0.0
         
         total_grad_norm = nn.utils.clip_grad_norm_(self.adapter.parameters(), self.config.max_grad_norm)
         nn.utils.clip_grad_norm_(self.pooling.parameters(), self.config.max_grad_norm)
-        print(f"clipping grads and etc: {time.perf_counter() - start_step_time:.4f} secs.")
+        # print(f"clipping grads and etc: {time.perf_counter() - start_step_time:.4f} secs.")
         
-        start_step_time = time.perf_counter()
+        # start_step_time = time.perf_counter()
         if self.scaler is not None:
             self.scaler.step(self.optimizer)
             self.scaler.update()
         else:
             self.optimizer.step()
-        print(f"optimizer step: {time.perf_counter() - start_step_time:.4f} secs.")
+        # print(f"optimizer step: {time.perf_counter() - start_step_time:.4f} secs.")
 
         step_results = {
             self.config.step_loss_key: loss.item(),
@@ -133,14 +133,13 @@ class IdentityFullTrainer(IdentityTrainer):
         waves = batch_dict[self.config.batch_wave_key]
         srs = batch_dict[self.config.batch_sr_key]
 
-        with torch.inference_mode():
-            start_time = time.perf_counter()
-            target_mel, mel_mask = self.mel_processor(waves, srs)
-            print(f"mel processed in {time.perf_counter() - start_time}")
+        # start_time = time.perf_counter()
+        target_mel, mel_mask = self.mel_processor(waves, srs)
+        # print(f"mel processed in {time.perf_counter() - start_time}")
 
-            start_time = time.perf_counter()             
-            feats, feats_mask =  self.feature_extractor(waves, srs)
-            print(f"features extracted in {time.perf_counter() - start_time}")
+        # start_time = time.perf_counter()             
+        feats, feats_mask =  self.feature_extractor(waves, srs)
+        # print(f"features extracted in {time.perf_counter() - start_time}")
                         
         return {
             self.config.batch_feats_key: feats,
