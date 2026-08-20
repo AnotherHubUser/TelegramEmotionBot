@@ -27,22 +27,26 @@ def main():
         config = TrainingConfig()
         cache_dir = "/kaggle/input/datasets/justsahil/libritts-r/"
 
-        datasets = ["dev_clean", "train_clean_100", "train_clean_360"]
-        epochs = [20, 5, 2]
-        prev_dataset = None
-        prev_epoch = None
-        checkpoint = None
-        for dataset_name, epoch in zip(datasets, epochs):
-            dataset_dir = cache_dir + dataset_name
-            config.epochs = epoch
-            runner = OnlineIdentityRunner(config, dataset_dir)
-            if prev_dataset is not None and prev_epoch is not None:
-                checkpoint = f"checkpoint_{prev_dataset}_epoch_{prev_epoch - 1}.pt"
-            runner.run(checkpoint=checkpoint)
-            prev_dataset = dataset_name
-            prev_epoch = epoch
+        # datasets = ["dev_clean", "train_clean_100", "train_clean_360"]
+        # epochs = [20, 5, 2]
+        # prev_dataset = None
+        # prev_epoch = None
+        # checkpoint = None
+        # for dataset_name, epoch in zip(datasets, epochs):
+        #     dataset_dir = cache_dir + dataset_name
+        #     config.epochs = epoch
+        #     runner = OnlineIdentityRunner(config, dataset_dir)
+        #     if prev_dataset is not None and prev_epoch is not None:
+        #         checkpoint = f"checkpoint_{prev_dataset}_epoch_{prev_epoch - 1}.pt"
+        #     runner.run(checkpoint=checkpoint)
+        #     prev_dataset = dataset_name
+        #     prev_epoch = epoch
 
-        
+        dataset_dir = cache_dir + "train_clean_100"
+        config.epochs = 3
+        runner = OnlineIdentityRunner(config, dataset_dir)
+        runner.run()
+    
     else:
         config = TrainingConfig()
         cache_dir = "./archive/LibriTTS_R/dev-clean"
